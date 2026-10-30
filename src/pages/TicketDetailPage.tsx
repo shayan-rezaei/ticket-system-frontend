@@ -46,14 +46,20 @@ export const TicketDetailPage: React.FC = () => {
 
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
-  // بررسی وجود حداقل یک پیام از طرف ادمین
+  // بررسی دسترسی ادمین یا پشتیبان (سازگار با حروف بزرگ و کوچک)
+  const isPrivileged =
+    currentUserRole === "ADMIN" || currentUserRole === "SUPPORTER";
+
+  // بررسی وجود حداقل یک پیام از طرف ادمین یا پشتیبان
   const hasAdminReply = comments.some(
-    (comment) => comment.author?.role === "ADMIN",
+    (comment) =>
+      comment.author?.role?.toUpperCase() === "ADMIN" ||
+      comment.author?.role?.toUpperCase() === "SUPPORTER",
   );
 
-  // ادمین همیشه اجازه ارسال پیام دارد.
-  // کاربر فقط بعد از اولین پاسخ ادمین می‌تواند پیام بفرستد.
-  const canSendMessage = currentUserRole === "ADMIN" || hasAdminReply;
+  // ادمین و پشتیبان همیشه اجازه ارسال پیام دارند.
+  // کاربر عادی فقط بعد از اولین پاسخ ادمین/پشتیبان می‌تواند پیام بفرستد.
+  const canSendMessage = isPrivileged || hasAdminReply;
 
   const handleLogout = () => {
     logout();
@@ -71,13 +77,31 @@ export const TicketDetailPage: React.FC = () => {
           const payload = JSON.parse(atob(token.split(".")[1]));
 
           if (payload) {
-            setCurrentUserRole(payload.role || "USER");
+            setCurrentUserRole(
+              payload.role ? payload.role.toUpperCase() : "USER",
+            );
             setCurrentUserId(payload.userId || payload.id || "");
             setCurrentUserEmail(payload.email || "");
           }
         } catch (e) {
           console.error("Token decode error", e);
         }
+      }
+
+      // دریافت پروفایل دقیق کاربر برای اطمینان از صحت نقش
+      try {
+        const userRes = await api.get("/auth/me");
+        if (userRes.data?.role) {
+          setCurrentUserRole(userRes.data.role.toUpperCase());
+        }
+        if (userRes.data?.id || userRes.data?.userId) {
+          setCurrentUserId(userRes.data.id || userRes.data.userId);
+        }
+        if (userRes.data?.email) {
+          setCurrentUserEmail(userRes.data.email);
+        }
+      } catch (e) {
+        console.error("Error fetching user profile", e);
       }
 
       const ticketRes = await api.get("/tickets");
@@ -112,7 +136,6 @@ export const TicketDetailPage: React.FC = () => {
   const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // جلوگیری از ارسال پیام توسط کاربر قبل از پاسخ ادمین
     if (!canSendMessage) return;
 
     if (!newComment.trim() || ticket?.status === "closed") {
@@ -254,9 +277,7 @@ export const TicketDetailPage: React.FC = () => {
               <h2 className="font-bold text-sm tracking-tight">سامانه تیکت</h2>
 
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {currentUserRole === "ADMIN"
-                  ? "پنل مدیریت (ادمین)"
-                  : "پنل کاربری"}
+                {isPrivileged ? "پنل مدیریت و پشتیبانی" : "پنل کاربری"}
               </p>
             </div>
           </div>
@@ -267,11 +288,7 @@ export const TicketDetailPage: React.FC = () => {
               className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
             >
               <LayoutDashboard className="h-4 w-4" />
-              <span>
-                {currentUserRole === "ADMIN"
-                  ? "مدیریت کل تیکت‌ها"
-                  : "داشبورد اصلی"}
-              </span>
+              <span>{isPrivileged ? "مدیریت کل تیکت‌ها" : "داشبورد اصلی"}</span>
             </button>
 
             <button
@@ -282,10 +299,13 @@ export const TicketDetailPage: React.FC = () => {
               <span>تنظیمات حساب</span>
             </button>
 
-            {currentUserRole === "ADMIN" && (
+            {isPrivileged && (
               <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl mt-2">
                 <ShieldAlert className="h-4 w-4" />
-                <span>دسترسی ادمین فعال است</span>
+                <span>
+                  دسترسی {currentUserRole === "ADMIN" ? "ادمین" : "پشتیبان"}{" "}
+                  فعال است
+                </span>
               </div>
             )}
           </nav>
@@ -369,7 +389,7 @@ export const TicketDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {currentUserRole === "ADMIN" ? (
+            {isPrivileged ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-amber-600 dark:text-amber-400 hidden sm:inline">
                   مدیریت وضعیت:
@@ -432,7 +452,7 @@ export const TicketDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {currentUserRole !== "ADMIN" && hasAdminReply && (
+            {!isPrivileged && hasAdminReply && (
               <div
                 className="max-w-xl mx-auto w-full rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-center gap-3"
                 dir="rtl"
@@ -441,12 +461,12 @@ export const TicketDetailPage: React.FC = () => {
 
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                    این تیکت به شایان رضائی ارجاع داده شده است
+                    این تیکت پاسخ داده شده است
                   </p>
 
                   <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                    درخواست شما توسط شایان رضائی دریافت شده و پاسخ‌گویی آغاز شده
-                    است.
+                    درخواست شما توسط تیم پشتیبانی دریافت شده و پاسخ‌گویی آغاز
+                    شده است.
                   </p>
                 </div>
               </div>
@@ -475,6 +495,8 @@ export const TicketDetailPage: React.FC = () => {
                   const isMyMessage =
                     String(c.authorId) === String(currentUserId) ||
                     (c.author?.email && c.author.email === currentUserEmail);
+
+                  const commentRole = c.author?.role?.toUpperCase();
 
                   return (
                     <div
@@ -506,9 +528,10 @@ export const TicketDetailPage: React.FC = () => {
                             <span>{c.author?.name || "کاربر سامانه"}</span>
                           </div>
 
-                          {c.author?.role === "ADMIN" ? (
+                          {commentRole === "ADMIN" ||
+                          commentRole === "SUPPORTER" ? (
                             <span className="flex items-center gap-1 text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                              پشتیبان
+                              {commentRole === "ADMIN" ? "ادمین" : "پشتیبان"}
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-medium">
@@ -567,12 +590,12 @@ export const TicketDetailPage: React.FC = () => {
               <div className="flex flex-col items-center justify-center gap-1 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-center">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-400">
                   <Clock className="h-4 w-4" />
-                  <span>منتظر پاسخ ادمین باشید</span>
+                  <span>منتظر پاسخ تیم پشتیبانی باشید</span>
                 </div>
 
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  پس از ارجاع به ادمین و ارسال اولین پاسخ توسط ادمین، امکان
-                  ارسال پیام برای شما هم فعال می‌شود.
+                  پس از ارسال اولین پاسخ توسط ادمین یا پشتیبان، امکان ارسال پیام
+                  برای شما هم فعال می‌شود.
                 </p>
               </div>
             ) : (
