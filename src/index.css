@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: IRANSansX;
+  font-style: normal;
+  font-weight: normal;
+  src: url("fonts/woff2/IRANSansX-Regular.woff2") format("woff2");
+}
+
+@theme {
+  --font-sans: IRANSansX;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
