@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   LogOut,
+  Menu,
   MinusCircle,
   Monitor,
   Moon,
@@ -45,6 +46,9 @@ export const DashboardPage: React.FC = () => {
   const [priority, setPriority] = useState<string>("normal");
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // استیت برای منوی کشویی موبایل
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
   // بررسی دسترسی ادمین یا پشتیبان
   const isPrivileged =
     currentUserRole === "ADMIN" || currentUserRole === "SUPPORTER";
@@ -62,7 +66,6 @@ export const DashboardPage: React.FC = () => {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload) {
-            // تبدیل نقش به حروف بزرگ برای هماهنگی با شرط‌ها
             setCurrentUserRole(
               payload.role ? payload.role.toUpperCase() : "USER",
             );
@@ -185,29 +188,61 @@ export const DashboardPage: React.FC = () => {
       className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* سایدبار ثابت */}
-      <aside className="w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 md:flex flex-col justify-between hidden shrink-0 sticky top-0 h-screen">
+      {/* پس‌زمینه تیره برای موبایل هنگام باز بودن منو */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+        />
+      )}
+
+      {/* سایدبار ریسپانسیو (دسکتاپ ثابت، موبایل کشویی/Drawer) */}
+      <aside
+        className={`w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex flex-col justify-between shrink-0 h-screen fixed md:sticky top-0 z-50 transition-transform duration-300 right-0 ${
+          isMobileMenuOpen
+            ? "translate-x-0"
+            : "translate-x-full md:translate-x-0"
+        }`}
+      >
         <div className="space-y-8">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md">
-              <TicketIcon className="h-5 w-5" />
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md">
+                <TicketIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-bold text-sm tracking-tight">
+                  سامانه تیکت
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {isPrivileged ? "پنل مدیریت و پشتیبانی" : "پنل کاربری"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-sm tracking-tight">سامانه تیکت</h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {isPrivileged ? "پنل مدیریت و پشتیبانی" : "پنل کاربری"}
-              </p>
-            </div>
+
+            {/* دکمه بستن منو در موبایل */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           <nav className="space-y-1">
-            <button className="flex w-full items-center gap-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex w-full items-center gap-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer"
+            >
               <LayoutDashboard className="h-4 w-4" />
               <span>{isPrivileged ? "مدیریت کل تیکت‌ها" : "داشبورد اصلی"}</span>
             </button>
 
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate("/settings");
+              }}
               className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
             >
               <Settings className="h-4 w-4" />
@@ -264,7 +299,28 @@ export const DashboardPage: React.FC = () => {
       </aside>
 
       {/* محتوای اصلی */}
-      <main className="grow p-6 md:p-10 space-y-8 overflow-y-auto">
+      <main className="grow p-4 md:p-10 space-y-8 overflow-y-auto">
+        {/* هدر موبایل شامل دکمه منوی همبرگری */}
+        <div className="flex items-center justify-between md:hidden pb-2 border-b border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-semibold shadow-sm cursor-pointer"
+          >
+            <Menu className="h-5 w-5" />
+            <span>منو</span>
+          </button>
+
+          {!isPrivileged && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-3 py-2 text-xs font-semibold shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>تیکت جدید</span>
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
@@ -283,7 +339,7 @@ export const DashboardPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             {!isPrivileged && (
               <button
                 onClick={() => setIsModalOpen(true)}

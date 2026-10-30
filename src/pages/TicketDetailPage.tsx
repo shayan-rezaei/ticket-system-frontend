@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  Menu,
   MinusCircle,
   Monitor,
   Moon,
@@ -19,6 +20,7 @@ import {
   ShieldAlert,
   Sun,
   Ticket as TicketIcon,
+  X,
 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -44,6 +46,9 @@ export const TicketDetailPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
 
+  // استیت برای باز و بسته شدن سایدبار در حالت موبایل
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   // بررسی دسترسی ادمین یا پشتیبان (سازگار با حروف بزرگ و کوچک)
@@ -57,8 +62,6 @@ export const TicketDetailPage: React.FC = () => {
       comment.author?.role?.toUpperCase() === "SUPPORTER",
   );
 
-  // ادمین و پشتیبان همیشه اجازه ارسال پیام دارند.
-  // کاربر عادی فقط بعد از اولین پاسخ ادمین/پشتیبان می‌تواند پیام بفرستد.
   const canSendMessage = isPrivileged || hasAdminReply;
 
   const handleLogout = () => {
@@ -88,7 +91,6 @@ export const TicketDetailPage: React.FC = () => {
         }
       }
 
-      // دریافت پروفایل دقیق کاربر برای اطمینان از صحت نقش
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data?.role) {
@@ -265,26 +267,54 @@ export const TicketDetailPage: React.FC = () => {
       className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* سایدبار ثابت */}
-      <aside className="w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 md:flex flex-col justify-between hidden shrink-0 sticky top-0 h-screen">
+      {/* پس‌زمینه تیره برای موبایل هنگام باز بودن منو */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+        />
+      )}
+
+      {/* سایدبار ریسپانسیو (دسکتاپ ثابت، موبایل کشویی/Drawer) */}
+      <aside
+        className={`w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex flex-col justify-between shrink-0 h-screen fixed md:sticky top-0 z-50 transition-transform duration-300 right-0 ${
+          isMobileMenuOpen
+            ? "translate-x-0"
+            : "translate-x-full md:translate-x-0"
+        }`}
+      >
         <div className="space-y-8">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md">
-              <TicketIcon className="h-5 w-5" />
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md">
+                <TicketIcon className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="font-bold text-sm tracking-tight">
+                  سامانه تیکت
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {isPrivileged ? "پنل مدیریت و پشتیبانی" : "پنل کاربری"}
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h2 className="font-bold text-sm tracking-tight">سامانه تیکت</h2>
-
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {isPrivileged ? "پنل مدیریت و پشتیبانی" : "پنل کاربری"}
-              </p>
-            </div>
+            {/* دکمه بستن منو در موبایل */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           <nav className="space-y-1">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate("/");
+              }}
               className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
             >
               <LayoutDashboard className="h-4 w-4" />
@@ -292,7 +322,10 @@ export const TicketDetailPage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate("/settings");
+              }}
               className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
             >
               <Settings className="h-4 w-4" />
@@ -365,9 +398,17 @@ export const TicketDetailPage: React.FC = () => {
 
       {/* محتوای اصلی چت */}
       <div className="grow flex flex-col min-w-0">
-        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 shadow-sm">
+        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md sticky top-0 z-30 px-4 md:px-6 py-4 shadow-sm">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* دکمه همبرگری برای باز کردن منو در موبایل */}
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-sm"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+
               <button
                 onClick={() => navigate("/")}
                 className="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-sm"
@@ -375,7 +416,7 @@ export const TicketDetailPage: React.FC = () => {
                 <ArrowRight className="h-4 w-4" />
               </button>
 
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 max-w-45 sm:max-w-none">
                 <h2 className="text-sm font-bold tracking-tight line-clamp-1">
                   {ticket.title}
                 </h2>
