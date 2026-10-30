@@ -49,11 +49,15 @@ export const DashboardPage: React.FC = () => {
   // استیت برای منوی کشویی موبایل
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // بررسی دسترسی ادمین یا پشتیبان (سازگار با حروف بزرگ و کوچک)
+  // بررسی دسترسی‌ها به صورت کاملاً امن و سازگار با حروف کوچک/بزرگ
   const normalizedRole = currentUserRole ? currentUserRole.toUpperCase() : "";
   const isPrivileged =
     normalizedRole === "ADMIN" || normalizedRole === "SUPPORTER";
-  const isAdmin = normalizedRole === "ADMIN";
+
+  // بررسی ادمین به صورت کاملاً مطمئن (چه ADMIN چه admin)
+  const isAdmin =
+    currentUserRole?.toUpperCase() === "ADMIN" ||
+    currentUserRole?.toLowerCase() === "admin";
 
   const handleLogout = () => {
     logout();
@@ -68,9 +72,7 @@ export const DashboardPage: React.FC = () => {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload) {
-            setCurrentUserRole(
-              payload.role ? payload.role.toUpperCase() : "USER",
-            );
+            setCurrentUserRole(payload.role || "USER");
             setCurrentUserName(
               payload.name || payload.email?.split("@")[0] || "",
             );
@@ -86,7 +88,7 @@ export const DashboardPage: React.FC = () => {
           setCurrentUserName(userRes.data.name);
         }
         if (userRes.data?.role) {
-          setCurrentUserRole(userRes.data.role.toUpperCase());
+          setCurrentUserRole(userRes.data.role);
         }
       } catch (e) {
         console.error("Error fetching user profile", e);
@@ -444,7 +446,7 @@ export const DashboardPage: React.FC = () => {
                           : "باز"}
                     </span>
 
-                    {/* دکمه حذف برای ادمین با بررسی مطمئن نقش */}
+                    {/* دکمه حذف برای ادمین */}
                     {isAdmin && (
                       <button
                         onClick={(e) => handleDeleteTicket(e, ticket.id)}
