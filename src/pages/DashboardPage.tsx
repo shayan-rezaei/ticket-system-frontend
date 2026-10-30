@@ -49,9 +49,11 @@ export const DashboardPage: React.FC = () => {
   // استیت برای منوی کشویی موبایل
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // بررسی دسترسی ادمین یا پشتیبان
+  // بررسی دسترسی ادمین یا پشتیبان (سازگار با حروف بزرگ و کوچک)
+  const normalizedRole = currentUserRole ? currentUserRole.toUpperCase() : "";
   const isPrivileged =
-    currentUserRole === "ADMIN" || currentUserRole === "SUPPORTER";
+    normalizedRole === "ADMIN" || normalizedRole === "SUPPORTER";
+  const isAdmin = normalizedRole === "ADMIN";
 
   const handleLogout = () => {
     logout();
@@ -252,10 +254,7 @@ export const DashboardPage: React.FC = () => {
             {isPrivileged && (
               <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl mt-2">
                 <ShieldAlert className="h-4 w-4" />
-                <span>
-                  دسترسی {currentUserRole === "ADMIN" ? "ادمین" : "پشتیبان"}{" "}
-                  فعال است
-                </span>
+                <span>دسترسی {isAdmin ? "ادمین" : "پشتیبان"} فعال است</span>
               </div>
             )}
           </nav>
@@ -445,7 +444,8 @@ export const DashboardPage: React.FC = () => {
                           : "باز"}
                     </span>
 
-                    {currentUserRole === "ADMIN" && (
+                    {/* دکمه حذف برای ادمین با بررسی مطمئن نقش */}
+                    {isAdmin && (
                       <button
                         onClick={(e) => handleDeleteTicket(e, ticket.id)}
                         title="حذف تیکت"
