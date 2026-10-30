@@ -49,7 +49,7 @@ export const DashboardPage: React.FC = () => {
   // استیت برای منوی کشویی موبایل
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // بررسی نقش‌ها به صورت کاملاً سازگار با حروف کوچک و بزرگ (support / supporter / admin)
+  // بررسی نقش‌ها به صورت کاملاً سازگار با حروف کوچک و بزرگ
   const roleLower = currentUserRole ? currentUserRole.toLowerCase() : "";
   const isPrivileged =
     roleLower === "supporter" ||
@@ -443,7 +443,7 @@ export const DashboardPage: React.FC = () => {
                           : "باز"}
                     </span>
 
-                    {/* دکمه حذف برای پشتیبان / ادمین */}
+                    {/* دکمه حذف برای پشتیبان */}
                     {isPrivileged && (
                       <button
                         onClick={(e) => handleDeleteTicket(e, ticket.id)}
