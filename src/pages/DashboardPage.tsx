@@ -37,7 +37,7 @@ export const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentUserRole, setCurrentUserRole] = useState<string>("USER");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("requester");
   const [currentUserName, setCurrentUserName] = useState<string>("");
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -49,15 +49,12 @@ export const DashboardPage: React.FC = () => {
   // استیت برای منوی کشویی موبایل
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // بررسی دسترسی‌ها به صورت کاملاً امن و سازگار با حروف کوچک/بزرگ
-  const normalizedRole = currentUserRole ? currentUserRole.toUpperCase() : "";
+  // بررسی نقش‌ها به صورت کاملاً سازگار با حروف کوچک و بزرگ (support / supporter / admin)
+  const roleLower = currentUserRole ? currentUserRole.toLowerCase() : "";
   const isPrivileged =
-    normalizedRole === "ADMIN" || normalizedRole === "SUPPORTER";
-
-  // بررسی ادمین به صورت کاملاً مطمئن (چه ADMIN چه admin)
-  const isAdmin =
-    currentUserRole?.toUpperCase() === "ADMIN" ||
-    currentUserRole?.toLowerCase() === "admin";
+    roleLower === "supporter" ||
+    roleLower === "admin" ||
+    roleLower === "support";
 
   const handleLogout = () => {
     logout();
@@ -72,7 +69,7 @@ export const DashboardPage: React.FC = () => {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload) {
-            setCurrentUserRole(payload.role || "USER");
+            setCurrentUserRole(payload.role || "requester");
             setCurrentUserName(
               payload.name || payload.email?.split("@")[0] || "",
             );
@@ -256,7 +253,7 @@ export const DashboardPage: React.FC = () => {
             {isPrivileged && (
               <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl mt-2">
                 <ShieldAlert className="h-4 w-4" />
-                <span>دسترسی {isAdmin ? "ادمین" : "پشتیبان"} فعال است</span>
+                <span>دسترسی پشتیبان فعال است</span>
               </div>
             )}
           </nav>
@@ -446,8 +443,8 @@ export const DashboardPage: React.FC = () => {
                           : "باز"}
                     </span>
 
-                    {/* دکمه حذف برای ادمین */}
-                    {isAdmin && (
+                    {/* دکمه حذف برای پشتیبان / ادمین */}
+                    {isPrivileged && (
                       <button
                         onClick={(e) => handleDeleteTicket(e, ticket.id)}
                         title="حذف تیکت"
