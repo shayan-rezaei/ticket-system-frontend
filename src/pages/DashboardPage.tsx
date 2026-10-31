@@ -18,6 +18,7 @@ import {
   Ticket as TicketIcon,
   Trash2,
   User,
+  UserCheck,
   X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -49,13 +50,10 @@ export const DashboardPage: React.FC = () => {
   const [description, setDescription] = useState<string>("");
   const [priority, setPriority] = useState<string>("normal");
   const [category, setCategory] = useState<string>("پشتیبانی فنی");
-  const [assignToMe, setAssignToMe] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // استیت برای منوی کشویی موبایل
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // بررسی نقش‌ها به صورت کاملاً سازگار با حروف کوچک و بزرگ
   const roleLower = currentUserRole ? currentUserRole.toLowerCase() : "";
   const isPrivileged =
     roleLower === "supporter" ||
@@ -125,7 +123,6 @@ export const DashboardPage: React.FC = () => {
         description,
         priority,
         category,
-        assigneeId: assignToMe && isPrivileged ? currentUserId : null,
       });
 
       setIsModalOpen(false);
@@ -133,7 +130,6 @@ export const DashboardPage: React.FC = () => {
       setDescription("");
       setPriority("normal");
       setCategory("پشتیبانی فنی");
-      setAssignToMe(false);
       fetchTickets();
 
       toast.success("تیکت شما با موفقیت ثبت شد!");
@@ -142,6 +138,20 @@ export const DashboardPage: React.FC = () => {
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // تابع ارجاع سریع تیکت به خود (مخصوص ادمین/پشتیبان)
+  const handleAssignToMe = async (e: React.MouseEvent, ticketId: string) => {
+    e.stopPropagation();
+    try {
+      await api.patch(`/tickets/${ticketId}/assign`, {
+        assigneeId: currentUserId,
+      });
+      toast.success("تیکت با موفقیت به شما ارجاع داده شد");
+      fetchTickets();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "خطا در ارجاع تیکت");
     }
   };
 
@@ -158,7 +168,6 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // فیلتر و مرتب‌سازی پیشرفته تیکت‌ها (سازگار با ریلیشن Category)
   const filteredTickets = tickets
     .filter((ticket) => {
       const matchesSearch =
@@ -202,21 +211,21 @@ export const DashboardPage: React.FC = () => {
     switch (prio) {
       case "high":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full">
             <Flame className="h-3 w-3" />
             زیاد
           </span>
         );
       case "low":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">
             <ArrowDownCircle className="h-3 w-3" />
             کم
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full">
             <MinusCircle className="h-3 w-3" />
             متوسط
           </span>
@@ -229,7 +238,6 @@ export const DashboardPage: React.FC = () => {
       className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* پس‌زمینه تیره برای موبایل هنگام باز بودن منو */}
       {isMobileMenuOpen && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
@@ -237,7 +245,6 @@ export const DashboardPage: React.FC = () => {
         />
       )}
 
-      {/* سایدبار ریسپانسیو (دسکتاپ ثابت، موبایل کشویی/Drawer) */}
       <aside
         className={`w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex flex-col justify-between shrink-0 h-screen fixed md:sticky top-0 z-50 transition-transform duration-300 right-0 ${
           isMobileMenuOpen
@@ -261,7 +268,6 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* دکمه بستن منو در موبایل */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-1 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden cursor-pointer"
@@ -336,9 +342,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </aside>
 
-      {/* محتوای اصلی */}
       <main className="grow p-4 md:p-10 space-y-8 overflow-y-auto">
-        {/* هدر موبایل شامل دکمه منوی همبرگری */}
         <div className="flex items-center justify-between md:hidden pb-2 border-b border-zinc-200 dark:border-zinc-800">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
@@ -348,13 +352,15 @@ export const DashboardPage: React.FC = () => {
             <span>منو</span>
           </button>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-3 py-2 text-xs font-semibold shadow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>تیکت جدید</span>
-          </button>
+          {!isPrivileged && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-3 py-2 text-xs font-semibold shadow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>تیکت جدید</span>
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -376,13 +382,15 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-4 py-2.5 text-sm font-semibold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              <span>تیکت جدید</span>
-            </button>
+            {!isPrivileged && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-4 py-2.5 text-sm font-semibold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>تیکت جدید</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -410,7 +418,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* بخش جستجو و فیلترها (جستجو، موضوع، اولویت) */}
+        {/* فیلترها و جستجو */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative w-full sm:grow">
             <Search className="absolute right-3.5 top-3.5 h-4 w-4 text-zinc-400" />
@@ -427,7 +435,6 @@ export const DashboardPage: React.FC = () => {
             />
           </div>
 
-          {/* دراپ‌داون فیلتر بر اساس موضوع */}
           <select
             value={selectedCategoryFilter}
             onChange={(e) => setSelectedCategoryFilter(e.target.value)}
@@ -440,7 +447,6 @@ export const DashboardPage: React.FC = () => {
             <option value="سوالات عمومی">سوالات عمومی</option>
           </select>
 
-          {/* دراپ‌داون مرتب‌سازی بر اساس اولویت */}
           <select
             value={selectedPrioritySort}
             onChange={(e) => setSelectedPrioritySort(e.target.value)}
@@ -453,6 +459,7 @@ export const DashboardPage: React.FC = () => {
           </select>
         </div>
 
+        {/* لیست تیکت‌ها به صورت جدول منظم */}
         <div className="space-y-4">
           {loading && (
             <div className="text-center py-12 text-zinc-400">
@@ -474,72 +481,139 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
           {!loading && !error && filteredTickets.length > 0 && (
-            <div className="grid gap-3">
-              {filteredTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  onClick={() => navigate(`/tickets/${ticket.id}`)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm transition-all cursor-pointer hover:border-zinc-400 dark:hover:border-zinc-700 hover:shadow-md"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h4 className="font-semibold text-sm">{ticket.title}</h4>
-                      {renderPriorityBadge(ticket.priority)}
-
-                      {(ticket.category?.name || ticket.category) && (
-                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full">
-                          {ticket.category?.name || ticket.category}
-                        </span>
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-[12px] font-semibold text-zinc-500">
+                      <th className="py-3.5 px-4">عنوان تیکت</th>
+                      <th className="py-3.5 px-4">موضوع</th>
+                      <th className="py-3.5 px-4">اولویت</th>
+                      {isPrivileged && (
+                        <th className="py-3.5 px-4">کاربر / فرستنده</th>
                       )}
-
-                      {isPrivileged && ticket.author && (
-                        <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
-                          <User className="h-3 w-3" />
-                          {ticket.author.name} ({ticket.author.email})
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">
-                      {ticket.description}
-                    </p>
-
-                    {ticket.assignee && (
-                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                        ارجاع داده شده به:{" "}
-                        {ticket.assignee.name || ticket.assignee.email}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 self-start sm:self-center">
-                    <span
-                      className={`text-xs font-medium px-3 py-1.5 rounded-full ${ticket.status === "closed" ? "bg-zinc-500/10 text-zinc-500" : ticket.status === "in_progress" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}
-                    >
-                      {ticket.status === "closed"
-                        ? "بسته شده"
-                        : ticket.status === "in_progress"
-                          ? "در حال بررسی"
-                          : "باز"}
-                    </span>
-
-                    {isPrivileged && (
-                      <button
-                        onClick={(e) => handleDeleteTicket(e, ticket.id)}
-                        title="حذف تیکت"
-                        className="p-2 rounded-xl text-zinc-400 hover:text-red-600 hover:bg-red-500/10 transition-all cursor-pointer"
+                      <th className="py-3.5 px-4">مسئول رسیدگی (ارجاع)</th>
+                      <th className="py-3.5 px-4">وضعیت</th>
+                      <th className="py-3.5 px-4 text-center">عملیات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+                    {filteredTickets.map((ticket) => (
+                      <tr
+                        key={ticket.id}
+                        onClick={() => navigate(`/tickets/${ticket.id}`)}
+                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-all cursor-pointer"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                        <td className="py-4 px-4 font-semibold">
+                          <div className="line-clamp-1">{ticket.title}</div>
+                          <div className="text-[11px] text-zinc-400 font-normal line-clamp-1 mt-0.5">
+                            {ticket.description}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {ticket.category?.name || ticket.category ? (
+                            <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full">
+                              {ticket.category?.name || ticket.category}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 text-xs">
+                              متفرقه
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {renderPriorityBadge(ticket.priority)}
+                        </td>
+
+                        {isPrivileged && (
+                          <td className="py-4 px-4 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-300">
+                            {ticket.author ? (
+                              <div className="flex items-center gap-1.5">
+                                <User className="h-3 w-3 text-zinc-400" />
+                                <span>{ticket.author.name}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        )}
+
+                        <td className="py-4 px-4 whitespace-nowrap text-xs">
+                          {ticket.assignee ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                              <UserCheck className="h-3 w-3" />
+                              {ticket.assignee.name || ticket.assignee.email}
+                            </span>
+                          ) : (
+                            <span className="text-amber-500 font-medium bg-amber-500/10 px-2.5 py-1 rounded-full text-[11px]">
+                              تعیین نشده
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span
+                            className={`text-xs font-medium px-3 py-1 rounded-full ${
+                              ticket.status === "closed"
+                                ? "bg-zinc-500/10 text-zinc-500"
+                                : ticket.status === "in_progress"
+                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            }`}
+                          >
+                            {ticket.status === "closed"
+                              ? "بسته شده"
+                              : ticket.status === "in_progress"
+                                ? "در حال بررسی"
+                                : "باز"}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap text-center">
+                          <div
+                            className="flex items-center justify-center gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* دکمه ارجاع سریع به خود برای ادمین/پشتیبان */}
+                            {isPrivileged && !ticket.assignee && (
+                              <button
+                                onClick={(e) => handleAssignToMe(e, ticket.id)}
+                                title="ارجاع به خودم"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all cursor-pointer"
+                              >
+                                <UserCheck className="h-3.5 w-3.5" />
+                                <span>ارجاع به من</span>
+                              </button>
+                            )}
+
+                            {/* دکمه حذف */}
+                            {isPrivileged && (
+                              <button
+                                onClick={(e) =>
+                                  handleDeleteTicket(e, ticket.id)
+                                }
+                                title="حذف تیکت"
+                                className="p-2 rounded-xl text-zinc-400 hover:text-red-600 hover:bg-red-500/10 transition-all cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
       </main>
 
-      {/* مدال ایجاد تیکت */}
-      {isModalOpen && (
+      {/* مدال ایجاد تیکت (فقط برای کاربران عادی نمایش داده می‌شود) */}
+      {!isPrivileged && isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-xl space-y-6">
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -600,24 +674,6 @@ export const DashboardPage: React.FC = () => {
                   </select>
                 </div>
               </div>
-
-              {isPrivileged && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="assignToMeCheckbox"
-                    checked={assignToMe}
-                    onChange={(e) => setAssignToMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <label
-                    htmlFor="assignToMeCheckbox"
-                    className="text-xs font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer"
-                  >
-                    ارجاع این تیکت به خودم ({currentUserName})
-                  </label>
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
