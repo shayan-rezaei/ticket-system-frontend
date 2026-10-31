@@ -19,7 +19,6 @@ import {
   Trash2,
   User,
   UserCheck,
-  Users,
   X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -70,7 +69,6 @@ export const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // ابتدا تلاش می‌کنیم اطلاعات کاربر را از اندپوینت /auth/me بگیریم
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data) {
@@ -79,12 +77,7 @@ export const DashboardPage: React.FC = () => {
           setCurrentUserId(userRes.data.id || userRes.data.userId || "");
         }
       } catch (e) {
-        console.error(
-          "Error fetching user profile from /auth/me, fallback to token",
-          e,
-        );
-
-        // اگر خطا داد، از توکن استفاده می‌کنیم
+        console.error("Error fetching user profile from /auth/me", e);
         const token = localStorage.getItem("token");
         if (token) {
           try {
@@ -288,19 +281,6 @@ export const DashboardPage: React.FC = () => {
               <LayoutDashboard className="h-4 w-4" />
               <span>{isPrivileged ? "مدیریت کل تیکت‌ها" : "داشبورد اصلی"}</span>
             </button>
-
-            {isPrivileged && (
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  navigate("/users");
-                }}
-                className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
-              >
-                <Users className="h-4 w-4" />
-                <span>مدیریت کاربران</span>
-              </button>
-            )}
 
             <button
               onClick={() => {
