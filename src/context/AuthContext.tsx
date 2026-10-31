@@ -5,6 +5,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
+import { api } from "../api/axiosInstance";
 
 interface User {
   id: string;
@@ -35,70 +36,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // استخراج پیشرفته و جامع اطلاعات کاربر و نقش از توکن JWT (پشتیبانی از ساختار تو در تو)
-  const decodeUserFromToken = (tokenStr: string): User | null => {
-    try {
-      const payload = JSON.parse(atob(tokenStr.split(".")[1]));
-      console.log("Decoded JWT Payload:", payload);
-
-      return {
-        id: payload.userId || payload.id || payload.user?.id || "",
-        email: payload.email || payload.user?.email || "",
-        name:
-          payload.name ||
-          payload.user?.name ||
-          payload.email?.split("@")[0] ||
-          "",
-        role:
-          payload.role ||
-          payload.userRole ||
-          payload.user?.role ||
-          payload.user?.userRole ||
-          "requester",
-      };
-    } catch (error) {
-      console.error("Failed to decode token", error);
-      return null;
-    }
-  };
-
+  // دریافت اطلاعات کامل و به‌روز کاربر (شامل نقش) مستقیماً از سرور
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-
-    if (storedToken) {
-      setToken(storedToken);
-      if (storedUser) {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem("token");
+      if (storedToken) {
+        setToken(storedToken);
         try {
-          const parsedUser = JSON.parse(storedUser);
-          if (!parsedUser.role) {
-            const decoded = decodeUserFromToken(storedToken);
-            setUser(decoded);
-          } else {
-            setUser(parsedUser);
+          // درخواست مستقیم به سرور برای دریافت نقش و اطلاعات معتبر کاربر
+          const res = await api.get("/auth/me");
+          if (res.data) {
+            const userData: User = {
+              id: res.data.id || res.data.userId || "",
+              email: res.data.email || "",
+              name: res.data.name || "",
+              role: res.data.role || "requester",
+            };
+            setUser(userData);
+            localStorage.setItem("user", JSON.stringify(userData));
           }
         } catch (error) {
-          console.error("Failed to parse user from localStorage", error);
-          setUser(decodeUserFromToken(storedToken));
+          console.error("Failed to fetch user profile from /auth/me", error);
+          // اگر ارتباط با سرور خطا داد، از localStorage یا توکن می‌خوانیم
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            try {
+              setUser(JSON.parse(storedUser));
+            } catch (e) {
+              setUser(null);
+            }
+          }
         }
-      } else {
-        const decoded = decodeUserFromToken(storedToken);
-        if (decoded) setUser(decoded);
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = (newToken: string, userData: User) => {
     setToken(newToken);
-    const decoded = decodeUserFromToken(newToken);
-    const finalUser = {
-      ...userData,
-      role: userData.role || decoded?.role || "requester",
-    };
-    setUser(finalUser);
+    setUser(userData);
     localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(finalUser));
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {
