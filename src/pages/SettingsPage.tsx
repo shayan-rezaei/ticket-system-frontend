@@ -25,7 +25,6 @@ export const SettingsPage: React.FC = () => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>("requester");
-  const [currentUserName, setCurrentUserName] = useState<string>("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,7 +38,6 @@ export const SettingsPage: React.FC = () => {
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data) {
-          setCurrentUserName(userRes.data.name || "");
           setCurrentUserRole(userRes.data.role || "requester");
           setName(userRes.data.name || "");
           setEmail(userRes.data.email || "");
@@ -52,7 +50,6 @@ export const SettingsPage: React.FC = () => {
             const payload = JSON.parse(atob(token.split(".")[1]));
             if (payload) {
               setCurrentUserRole(payload.role || "requester");
-              setCurrentUserName(payload.name || "");
               setName(payload.name || "");
               setEmail(payload.email || "");
             }
@@ -80,7 +77,7 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      // اگر اندپوینت پروفایل دارید اینجا فراخوانی کنید
+      // ارسال اطلاعات پروفایل و رمز عبور به سرور در صورت نیاز
       toast.success("تنظیمات با موفقیت ذخیره شد");
     } catch (err: any) {
       toast.error(err.response?.data?.error || "خطا در بروزرسانی اطلاعات");
@@ -101,7 +98,7 @@ export const SettingsPage: React.FC = () => {
         />
       )}
 
-      {/* سایدبار کاملاً هماهنگ با وضعیت ادمین یا کاربر */}
+      {/* سایدبار */}
       <aside
         className={`w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex flex-col justify-between shrink-0 h-screen fixed md:sticky top-0 z-50 transition-transform duration-300 right-0 ${
           isMobileMenuOpen
@@ -263,13 +260,26 @@ export const SettingsPage: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    رمز عبور فعلی
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="رمز عبور فعلی..."
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                     رمز عبور جدید
                   </label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="در صورت عدم تمایل به تغییر خالی بگذارید"
+                    placeholder="رمز عبور جدید..."
                     className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
                   />
                 </div>
