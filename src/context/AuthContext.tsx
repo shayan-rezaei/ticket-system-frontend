@@ -35,15 +35,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // استخراج خودکار اطلاعات کاربر و نقش از توکن JWT
+  // استخراج پیشرفته و جامع اطلاعات کاربر و نقش از توکن JWT (پشتیبانی از ساختار تو در تو)
   const decodeUserFromToken = (tokenStr: string): User | null => {
     try {
       const payload = JSON.parse(atob(tokenStr.split(".")[1]));
+      console.log("Decoded JWT Payload:", payload);
+
       return {
-        id: payload.userId || payload.id || "",
-        email: payload.email || "",
-        name: payload.name || payload.email?.split("@")[0] || "",
-        role: payload.role || payload.userRole || "requester",
+        id: payload.userId || payload.id || payload.user?.id || "",
+        email: payload.email || payload.user?.email || "",
+        name:
+          payload.name ||
+          payload.user?.name ||
+          payload.email?.split("@")[0] ||
+          "",
+        role:
+          payload.role ||
+          payload.userRole ||
+          payload.user?.role ||
+          payload.user?.userRole ||
+          "requester",
       };
     } catch (error) {
       console.error("Failed to decode token", error);
@@ -59,7 +70,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(storedToken);
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          if (!parsedUser.role) {
+            const decoded = decodeUserFromToken(storedToken);
+            setUser(decoded);
+          } else {
+            setUser(parsedUser);
+          }
         } catch (error) {
           console.error("Failed to parse user from localStorage", error);
           setUser(decodeUserFromToken(storedToken));
@@ -74,9 +91,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = (newToken: string, userData: User) => {
     setToken(newToken);
+    const decoded = decodeUserFromToken(newToken);
     const finalUser = {
       ...userData,
-      role: userData.role || decodeUserFromToken(newToken)?.role || "requester",
+      role: userData.role || decoded?.role || "requester",
     };
     setUser(finalUser);
     localStorage.setItem("token", newToken);
