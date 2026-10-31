@@ -158,7 +158,7 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // فیلتر و مرتب‌سازی پیشرفته تیکت‌ها
+  // فیلتر و مرتب‌سازی پیشرفته تیکت‌ها (سازگار با ریلیشن Category)
   const filteredTickets = tickets
     .filter((ticket) => {
       const matchesSearch =
@@ -169,8 +169,10 @@ export const DashboardPage: React.FC = () => {
           .includes(searchQuery.toLowerCase()) ||
         ticket.author?.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
+      const ticketCategoryName = ticket.category?.name || ticket.category || "";
       const matchesCategory =
-        !selectedCategoryFilter || ticket.category === selectedCategoryFilter;
+        !selectedCategoryFilter ||
+        ticketCategoryName === selectedCategoryFilter;
 
       return matchesSearch && matchesCategory;
     })
@@ -484,9 +486,9 @@ export const DashboardPage: React.FC = () => {
                       <h4 className="font-semibold text-sm">{ticket.title}</h4>
                       {renderPriorityBadge(ticket.priority)}
 
-                      {ticket.category && (
+                      {(ticket.category?.name || ticket.category) && (
                         <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full">
-                          {ticket.category}
+                          {ticket.category?.name || ticket.category}
                         </span>
                       )}
 
