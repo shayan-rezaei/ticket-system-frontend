@@ -9,7 +9,7 @@ import {
   Ticket as TicketIcon,
   X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -25,37 +25,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const [userRole, setUserRole] = useState<string>("requester");
-
-  useEffect(() => {
-    // خواندن مستقیم و فوری نقش از توکن موجود در localStorage
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        console.log("Token Payload in Sidebar:", payload); // برای بررسی در کنسول F12
-        if (payload && payload.role) {
-          setUserRole(payload.role);
-        }
-      } catch (e) {
-        console.error("Error decoding token in Sidebar", e);
-      }
-    }
-  }, []);
-
-  // بررسی دقیق نقش (تبدیل به حروف کوچک و حذف فاصله‌های اضافی)
-  const normalizedRole = userRole ? userRole.toLowerCase().trim() : "";
-
-  // هر نقشی که غیر از کاربر عادی باشد را به عنوان ادمین/پشتیبان شناسایی می‌کنیم
+  // خواندن نقش به طور مستقیم از Context با بررسی عدم حساسیت به حروف
+  const roleLower = user?.role ? user.role.toLowerCase().trim() : "";
   const isPrivileged =
-    normalizedRole === "supporter" ||
-    normalizedRole === "admin" ||
-    normalizedRole === "support" ||
-    normalizedRole === "administrator" ||
-    normalizedRole !== "requester"; // اگر نقشی غیر از requester بود قطعاً پشتیبان است
+    roleLower === "supporter" ||
+    roleLower === "admin" ||
+    roleLower === "support" ||
+    roleLower === "administrator";
 
   const handleLogout = () => {
     logout();

@@ -8,18 +8,18 @@ import { LoginPage } from "./pages/LoginPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
 
-// محافظت از مسیرها برای کاربران لاگین‌کرده
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
+  if (isLoading) return null;
   if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
-// مسیرهای عمومی (مخصوص کاربران مهمان)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
+  if (isLoading) return null;
   if (token) return <Navigate to="/" replace />;
   return <>{children}</>;
 };

@@ -6,7 +6,6 @@ import React, {
   type ReactNode,
 } from "react";
 
-// ۱. تعریف ساختار کاربر و مقادیر Context
 interface User {
   id: string;
   email: string;
@@ -23,10 +22,8 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// ۲. ساخت کانتکست با مقدار اولیه null
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// ۳. تعریف پراپرتی‌های Provider
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -38,32 +35,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // بررسی توکن و اطلاعات کاربر در بارگذاری اولیه
+  // استخراج خودکار اطلاعات کاربر و نقش از توکن JWT
+  const decodeUserFromToken = (tokenStr: string): User | null => {
+    try {
+      const payload = JSON.parse(atob(tokenStr.split(".")[1]));
+      return {
+        id: payload.userId || payload.id || "",
+        email: payload.email || "",
+        name: payload.name || payload.email?.split("@")[0] || "",
+        role: payload.role || payload.userRole || "requester",
+      };
+    } catch (error) {
+      console.error("Failed to decode token", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
-    if (storedToken && storedUser) {
+    if (storedToken) {
       setToken(storedToken);
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse user from localStorage", error);
-        logout();
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error("Failed to parse user from localStorage", error);
+          setUser(decodeUserFromToken(storedToken));
+        }
+      } else {
+        const decoded = decodeUserFromToken(storedToken);
+        if (decoded) setUser(decoded);
       }
     }
     setIsLoading(false);
   }, []);
 
-  // تابع لاگین
   const login = (newToken: string, userData: User) => {
     setToken(newToken);
-    setUser(userData);
+    const finalUser = {
+      ...userData,
+      role: userData.role || decodeUserFromToken(newToken)?.role || "requester",
+    };
+    setUser(finalUser);
     localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(finalUser));
   };
 
-  // تابع لاگ‌آوت
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -87,7 +106,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// ۴. کاستوم هوک امن برای استفاده از Context
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
