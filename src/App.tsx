@@ -7,6 +7,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
+import { UsersManagementPage } from "./pages/UsersManagementPage"; // اضافه شد
 
 // محافظت از مسیرها
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -63,6 +64,15 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <TicketDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* اضافه شدن روت مدیریت کاربران */}
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <UsersManagementPage />
                 </ProtectedRoute>
               }
             />

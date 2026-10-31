@@ -31,7 +31,6 @@ export const UsersManagementPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // استیت‌های مدال و فرم
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -39,6 +38,26 @@ export const UsersManagementPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("requester");
   const [submitting, setSubmitting] = useState(false);
+
+  // بررسی نقش کاربر از روی توکن
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const userRole = payload.role ? payload.role.toLowerCase() : "";
+        if (userRole !== "admin") {
+          toast.error("شما دسترسی به این صفحه را ندارید.");
+          navigate("/");
+        }
+      } catch (e) {
+        console.error("Token error", e);
+        navigate("/");
+      }
+    } else {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     logout();
@@ -120,7 +139,6 @@ export const UsersManagementPage: React.FC = () => {
       className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
       dir="rtl"
     >
-      {/* پس‌زمینه تیره برای موبایل هنگام باز بودن منو */}
       {isMobileMenuOpen && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
@@ -128,7 +146,7 @@ export const UsersManagementPage: React.FC = () => {
         />
       )}
 
-      {/* سایدبار دسکتاپ و موبایل */}
+      {/* سایدبار */}
       <aside
         className={`w-64 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 flex flex-col justify-between shrink-0 h-screen fixed md:sticky top-0 z-50 transition-transform duration-300 right-0 ${
           isMobileMenuOpen
@@ -346,7 +364,7 @@ export const UsersManagementPage: React.FC = () => {
           </div>
         )}
 
-        {/* مدال ایجاد و ویرایش کاربر */}
+        {/* مدال ساخت و ویرایش کاربر */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-xl space-y-6">
