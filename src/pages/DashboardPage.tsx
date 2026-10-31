@@ -158,7 +158,7 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // فیلتر و مرتب‌سازی تیکت‌ها
+  // فیلتر و مرتب‌سازی پیشرفته تیکت‌ها
   const filteredTickets = tickets
     .filter((ticket) => {
       const matchesSearch =
@@ -175,15 +175,20 @@ export const DashboardPage: React.FC = () => {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
+      const weight: any = { high: 3, normal: 2, low: 1 };
+
       if (selectedPrioritySort === "high") {
-        const weight: any = { high: 3, normal: 2, low: 1 };
         return (weight[b.priority] || 2) - (weight[a.priority] || 2);
       }
       if (selectedPrioritySort === "low") {
-        const weight: any = { high: 3, normal: 2, low: 1 };
         return (weight[a.priority] || 2) - (weight[b.priority] || 2);
       }
-      return 0; // پیش‌فرض
+      if (selectedPrioritySort === "normal") {
+        return (
+          (b.priority === "normal" ? 1 : 0) - (a.priority === "normal" ? 1 : 0)
+        );
+      }
+      return 0;
     });
 
   const totalCount = tickets.length;
@@ -441,6 +446,7 @@ export const DashboardPage: React.FC = () => {
           >
             <option value="">مرتب‌سازی بر اساس اولویت</option>
             <option value="high">اولویت زیاد (ابتدا زیاد)</option>
+            <option value="normal">اولویت متوسط (ابتدا متوسط)</option>
             <option value="low">اولویت کم (ابتدا کم)</option>
           </select>
         </div>
@@ -495,7 +501,6 @@ export const DashboardPage: React.FC = () => {
                       {ticket.description}
                     </p>
 
-                    {/* نمایش اطلاعات مسئول ارجاع‌شده */}
                     {ticket.assignee && (
                       <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                         ارجاع داده شده به:{" "}
@@ -514,7 +519,6 @@ export const DashboardPage: React.FC = () => {
                           : "باز"}
                     </span>
 
-                    {/* دکمه حذف برای پشتیبان */}
                     {isPrivileged && (
                       <button
                         onClick={(e) => handleDeleteTicket(e, ticket.id)}
@@ -595,7 +599,6 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* گزینه ارجاع به خود برای ادمین / پشتیبان */}
               {isPrivileged && (
                 <div className="flex items-center gap-2 pt-1">
                   <input
