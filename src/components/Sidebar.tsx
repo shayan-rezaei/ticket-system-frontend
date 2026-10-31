@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { api } from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -29,45 +28,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const [currentUserRole, setCurrentUserRole] = useState<string>("requester");
+  const [userRole, setUserRole] = useState<string>("requester");
 
-  // دریافت و استخراج نقش کاربر با بالاترین امنیت و دقت
   useEffect(() => {
-    const fetchRole = async () => {
-      // ۱. ابتدا از توکن محلی می‌خوانیم
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          if (payload && payload.role) {
-            setCurrentUserRole(payload.role);
-          }
-        } catch (e) {
-          console.error("Token decode error", e);
-        }
-      }
-
-      // ۲. سپس از سرور /auth/me برای اطمینان کامل می‌گیریم
+    // خواندن مستقیم و فوری نقش از توکن موجود در localStorage
+    const token = localStorage.getItem("token");
+    if (token) {
       try {
-        const res = await api.get("/auth/me");
-        if (res.data && res.data.role) {
-          setCurrentUserRole(res.data.role);
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        console.log("Token Payload in Sidebar:", payload); // برای بررسی در کنسول F12
+        if (payload && payload.role) {
+          setUserRole(payload.role);
         }
       } catch (e) {
-        // اگر خطا داد به همان توکن اکتفا می‌کنیم
+        console.error("Error decoding token in Sidebar", e);
       }
-    };
-
-    fetchRole();
+    }
   }, []);
 
-  // بررسی نقش بدون حساسیت به بزرگی و کوچکی حروف
-  const roleLower = currentUserRole ? currentUserRole.toLowerCase().trim() : "";
+  // بررسی دقیق نقش (تبدیل به حروف کوچک و حذف فاصله‌های اضافی)
+  const normalizedRole = userRole ? userRole.toLowerCase().trim() : "";
+
+  // هر نقشی که غیر از کاربر عادی باشد را به عنوان ادمین/پشتیبان شناسایی می‌کنیم
   const isPrivileged =
-    roleLower === "supporter" ||
-    roleLower === "admin" ||
-    roleLower === "support" ||
-    roleLower === "administrator";
+    normalizedRole === "supporter" ||
+    normalizedRole === "admin" ||
+    normalizedRole === "support" ||
+    normalizedRole === "administrator" ||
+    normalizedRole !== "requester"; // اگر نقشی غیر از requester بود قطعاً پشتیبان است
 
   const handleLogout = () => {
     logout();
