@@ -7,9 +7,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
-import { UsersManagementPage } from "./pages/UsersManagementPage"; // اضافه شد
 
-// محافظت از مسیرها
+// محافظت از مسیرها برای کاربران لاگین‌کرده
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -18,6 +17,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   return <>{children}</>;
 };
 
+// مسیرهای عمومی (مخصوص کاربران مهمان)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token } = useAuth();
   if (token) return <Navigate to="/" replace />;
@@ -64,15 +64,6 @@ export function App() {
               element={
                 <ProtectedRoute>
                   <TicketDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            {/* اضافه شدن روت مدیریت کاربران */}
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <UsersManagementPage />
                 </ProtectedRoute>
               }
             />

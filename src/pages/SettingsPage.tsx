@@ -35,7 +35,6 @@ export const SettingsPage: React.FC = () => {
   // دریافت و تنظیم اطلاعات کاربر از توکن و اندپوینت /auth/me
   useEffect(() => {
     const initUserData = async () => {
-      // ۱. رمزگشایی اولیه از توکن محلی
       const token = localStorage.getItem("token");
       if (token) {
         try {
@@ -49,7 +48,6 @@ export const SettingsPage: React.FC = () => {
         }
       }
 
-      // ۲. دریافت اطلاعات به‌روز از اندپوینت /auth/me
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data) {
