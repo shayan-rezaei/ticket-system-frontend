@@ -3,43 +3,24 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "../api/axiosInstance";
 import { Sidebar } from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext";
 
 export const SettingsPage: React.FC = () => {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const initUserData = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          if (payload && payload.email) {
-            setEmail(payload.email);
-          }
-        } catch (tokenErr) {
-          console.error("Error decoding token", tokenErr);
-        }
-      }
-
-      try {
-        const userRes = await api.get("/auth/me");
-        if (userRes.data) {
-          if (userRes.data.name) setName(userRes.data.name);
-          if (userRes.data.email) setEmail(userRes.data.email);
-        }
-      } catch (e) {
-        console.error("Error fetching user profile from /auth/me", e);
-      }
-    };
-
-    initUserData();
-  }, []);
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+    }
+  }, [user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

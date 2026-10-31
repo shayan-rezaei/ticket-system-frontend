@@ -30,42 +30,35 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("token"),
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // دریافت اطلاعات کامل و به‌روز کاربر (شامل نقش) مستقیماً از سرور
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem("token");
       if (storedToken) {
         setToken(storedToken);
         try {
-          // درخواست مستقیم به سرور برای دریافت نقش و اطلاعات معتبر کاربر
           const res = await api.get("/auth/me");
           if (res.data) {
             const userData: User = {
               id: res.data.id || res.data.userId || "",
               email: res.data.email || "",
               name: res.data.name || "",
-              role: res.data.role || "requester",
+              role: res.data.role || res.data.userRole || "requester",
             };
             setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
           }
         } catch (error) {
           console.error("Failed to fetch user profile from /auth/me", error);
-          // اگر ارتباط با سرور خطا داد، از localStorage یا توکن می‌خوانیم
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            try {
-              setUser(JSON.parse(storedUser));
-            } catch (e) {
-              setUser(null);
-            }
-          }
         }
       }
       setIsLoading(false);

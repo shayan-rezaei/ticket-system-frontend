@@ -28,7 +28,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  // خواندن نقش به طور مستقیم از Context با بررسی عدم حساسیت به حروف
   const roleLower = user?.role ? user.role.toLowerCase().trim() : "";
   const isPrivileged =
     roleLower === "supporter" ||
