@@ -34,15 +34,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.getItem("token"),
   );
 
+  const decodeUserFromToken = (tokenStr: string): User | null => {
+    try {
+      const payload = JSON.parse(atob(tokenStr.split(".")[1]));
+      const raw = payload.user || payload;
+      return {
+        id: raw.id || raw.userId || "",
+        email: raw.email || "",
+        name: raw.name || raw.email?.split("@")[0] || "",
+        role: raw.role || raw.userRole || raw.permission || "requester",
+      };
+    } catch (e) {
+      console.error("Token decode error:", e);
+      return null;
+    }
+  };
+
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      return decodeUserFromToken(storedToken);
+    }
+    return null;
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const initAuth = async () => {
       const storedToken = localStorage.getItem("token");
       if (!storedToken) {
         setIsLoading(false);
@@ -50,57 +69,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setToken(storedToken);
+      const tokenUser = decodeUserFromToken(storedToken);
+      if (tokenUser) {
+        setUser(tokenUser);
+      }
 
       try {
-        // درخواست به /auth/me برای گرفتن نقش واقعی از دیتابیس
         const res = await api.get("/auth/me");
-        console.log("Response from /auth/me:", res.data); // این را در F12 ببینید
-
-        // استخراج امن اطلاعات از هر ساختاری که بک‌اند فرستاده باشد
         const rawData = res.data?.data || res.data?.user || res.data || {};
 
-        const resolvedUser: User = {
-          id: rawData.id || rawData.userId || "",
-          email: rawData.email || "",
-          name: rawData.name || "",
-          role: rawData.role || rawData.userRole || "requester",
+        const serverUser: User = {
+          id: rawData.id || rawData.userId || tokenUser?.id || "",
+          email: rawData.email || tokenUser?.email || "",
+          name: rawData.name || tokenUser?.name || "",
+          role:
+            tokenUser?.role && tokenUser.role !== "requester"
+              ? tokenUser.role
+              : rawData.role || rawData.userRole || "requester",
         };
 
-        setUser(resolvedUser);
-        localStorage.setItem("user", JSON.stringify(resolvedUser));
+        setUser(serverUser);
+        localStorage.setItem("user", JSON.stringify(serverUser));
       } catch (error) {
-        console.error(
-          "Error fetching /auth/me, using fallback from token/storage",
-          error,
-        );
-
-        // اگر سرور خطا داد، از توکن JWT استخراج می‌کنیم
-        try {
-          const payload = JSON.parse(atob(storedToken.split(".")[1]));
-          const tokenData = payload.user || payload;
-          const fallbackUser: User = {
-            id: tokenData.id || tokenData.userId || "",
-            email: tokenData.email || "",
-            name: tokenData.name || "",
-            role: tokenData.role || tokenData.userRole || "requester",
-          };
-          setUser(fallbackUser);
-        } catch (e) {
-          console.error("Failed to decode token fallback", e);
-        }
+        console.error("Failed to fetch /auth/me, keeping token state", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUserData();
+    initAuth();
   }, []);
 
   const login = (newToken: string, userData: User) => {
     setToken(newToken);
-    setUser(userData);
+    const tokenParsed = decodeUserFromToken(newToken);
+    const finalUser: User = {
+      ...userData,
+      role: userData.role || tokenParsed?.role || "requester",
+    };
+    setUser(finalUser);
     localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(finalUser));
   };
 
   const logout = () => {
