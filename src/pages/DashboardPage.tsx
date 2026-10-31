@@ -69,35 +69,39 @@ export const DashboardPage: React.FC = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          if (payload) {
-            setCurrentUserRole(payload.role || "requester");
-            setCurrentUserId(payload.userId || payload.id || "");
-            setCurrentUserName(
-              payload.name || payload.email?.split("@")[0] || "",
-            );
-          }
-        } catch (e) {
-          console.error("Error decoding token role", e);
-        }
-      }
 
+      // ابتدا تلاش می‌کنیم اطلاعات کاربر را از اندپوینت /auth/me بگیریم
       try {
         const userRes = await api.get("/auth/me");
-        if (userRes.data?.name) {
-          setCurrentUserName(userRes.data.name);
-        }
-        if (userRes.data?.role) {
-          setCurrentUserRole(userRes.data.role);
-        }
-        if (userRes.data?.id || userRes.data?.userId) {
-          setCurrentUserId(userRes.data.id || userRes.data.userId);
+        if (userRes.data) {
+          setCurrentUserName(userRes.data.name || "");
+          setCurrentUserRole(userRes.data.role || "requester");
+          setCurrentUserId(userRes.data.id || userRes.data.userId || "");
         }
       } catch (e) {
-        console.error("Error fetching user profile", e);
+        console.error(
+          "Error fetching user profile from /auth/me, fallback to token",
+          e,
+        );
+
+        // اگر خطا داد، از توکن استفاده می‌کنیم
+        const token = localStorage.getItem("token");
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            if (payload) {
+              setCurrentUserRole(
+                payload.role || payload.userRole || "requester",
+              );
+              setCurrentUserId(payload.userId || payload.id || "");
+              setCurrentUserName(
+                payload.name || payload.email?.split("@")[0] || "",
+              );
+            }
+          } catch (tokenErr) {
+            console.error("Error decoding token role", tokenErr);
+          }
+        }
       }
 
       const response = await api.get("/tickets");
