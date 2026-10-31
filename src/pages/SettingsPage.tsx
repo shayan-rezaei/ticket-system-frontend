@@ -32,34 +32,39 @@ export const SettingsPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // بررسی نقش و اطلاعات کاربر هنگام لود صفحه
+  // بررسی دقیق و اولویت‌بندی‌شده نقش کاربر هنگام لود صفحه
   useEffect(() => {
-    const fetchUserData = async () => {
+    const initUserData = async () => {
+      // ۱. ابتدا مستقیم از توکن رمزگشایی می‌کنیم که مطمئن‌ترین منبع نقش است
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          if (payload && payload.role) {
+            setCurrentUserRole(payload.role);
+          }
+          if (payload && payload.email) {
+            setEmail(payload.email);
+          }
+        } catch (tokenErr) {
+          console.error("Error decoding token", tokenErr);
+        }
+      }
+
+      // ۲. دریافت پروفایل برای به‌روزرسانی نام و چک مجدد نقش
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data) {
-          setCurrentUserRole(userRes.data.role || "requester");
-          setName(userRes.data.name || "");
-          setEmail(userRes.data.email || "");
+          if (userRes.data.name) setName(userRes.data.name);
+          if (userRes.data.email) setEmail(userRes.data.email);
+          if (userRes.data.role) setCurrentUserRole(userRes.data.role);
         }
       } catch (e) {
-        console.error("Error fetching user profile", e);
-        const token = localStorage.getItem("token");
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            if (payload) {
-              setCurrentUserRole(payload.role || "requester");
-              setName(payload.name || "");
-              setEmail(payload.email || "");
-            }
-          } catch (tokenErr) {
-            console.error("Error decoding token", tokenErr);
-          }
-        }
+        console.error("Error fetching user profile from /auth/me", e);
       }
     };
-    fetchUserData();
+
+    initUserData();
   }, []);
 
   const roleLower = currentUserRole ? currentUserRole.toLowerCase() : "";
@@ -77,7 +82,6 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      // ارسال اطلاعات پروفایل و رمز عبور به سرور در صورت نیاز
       toast.success("تنظیمات با موفقیت ذخیره شد");
     } catch (err: any) {
       toast.error(err.response?.data?.error || "خطا در بروزرسانی اطلاعات");
