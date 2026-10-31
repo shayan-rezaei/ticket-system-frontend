@@ -37,13 +37,19 @@ export const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
+  const [selectedPrioritySort, setSelectedPrioritySort] = useState("");
+
   const [currentUserRole, setCurrentUserRole] = useState<string>("requester");
   const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [priority, setPriority] = useState<string>("normal");
+  const [category, setCategory] = useState<string>("پشتیبانی فنی");
+  const [assignToMe, setAssignToMe] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // استیت برای منوی کشویی موبایل
@@ -70,6 +76,7 @@ export const DashboardPage: React.FC = () => {
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload) {
             setCurrentUserRole(payload.role || "requester");
+            setCurrentUserId(payload.userId || payload.id || "");
             setCurrentUserName(
               payload.name || payload.email?.split("@")[0] || "",
             );
@@ -86,6 +93,9 @@ export const DashboardPage: React.FC = () => {
         }
         if (userRes.data?.role) {
           setCurrentUserRole(userRes.data.role);
+        }
+        if (userRes.data?.id || userRes.data?.userId) {
+          setCurrentUserId(userRes.data.id || userRes.data.userId);
         }
       } catch (e) {
         console.error("Error fetching user profile", e);
@@ -114,12 +124,16 @@ export const DashboardPage: React.FC = () => {
         title,
         description,
         priority,
+        category,
+        assigneeId: assignToMe && isPrivileged ? currentUserId : null,
       });
 
       setIsModalOpen(false);
       setTitle("");
       setDescription("");
       setPriority("normal");
+      setCategory("پشتیبانی فنی");
+      setAssignToMe(false);
       fetchTickets();
 
       toast.success("تیکت شما با موفقیت ثبت شد!");
@@ -144,14 +158,33 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const filteredTickets = tickets.filter((ticket) => {
-    return (
-      ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.author?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.author?.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  // فیلتر و مرتب‌سازی تیکت‌ها
+  const filteredTickets = tickets
+    .filter((ticket) => {
+      const matchesSearch =
+        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.author?.name
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        ticket.author?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory =
+        !selectedCategoryFilter || ticket.category === selectedCategoryFilter;
+
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (selectedPrioritySort === "high") {
+        const weight: any = { high: 3, normal: 2, low: 1 };
+        return (weight[b.priority] || 2) - (weight[a.priority] || 2);
+      }
+      if (selectedPrioritySort === "low") {
+        const weight: any = { high: 3, normal: 2, low: 1 };
+        return (weight[a.priority] || 2) - (weight[b.priority] || 2);
+      }
+      return 0; // پیش‌فرض
+    });
 
   const totalCount = tickets.length;
   const pendingCount = tickets.filter(
@@ -308,15 +341,13 @@ export const DashboardPage: React.FC = () => {
             <span>منو</span>
           </button>
 
-          {!isPrivileged && (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-3 py-2 text-xs font-semibold shadow"
-            >
-              <Plus className="h-4 w-4" />
-              <span>تیکت جدید</span>
-            </button>
-          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-3 py-2 text-xs font-semibold shadow"
+          >
+            <Plus className="h-4 w-4" />
+            <span>تیکت جدید</span>
+          </button>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -338,15 +369,13 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {!isPrivileged && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-4 py-2.5 text-sm font-semibold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                <span>تیکت جدید</span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-4 py-2.5 text-sm font-semibold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>تیکت جدید</span>
+            </button>
           </div>
         </div>
 
@@ -374,19 +403,46 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute right-3.5 top-3.5 h-4 w-4 text-zinc-400" />
-          <input
-            type="text"
-            placeholder={
-              isPrivileged
-                ? "جستجو در تیکت‌ها یا نام کاربر..."
-                : "جستجو در تیکت‌ها..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 pr-10 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-zinc-900 dark:focus:border-white focus:outline-none transition-all shadow-sm"
-          />
+        {/* بخش جستجو و فیلترها (جستجو، موضوع، اولویت) */}
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative w-full sm:grow">
+            <Search className="absolute right-3.5 top-3.5 h-4 w-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder={
+                isPrivileged
+                  ? "جستجو در تیکت‌ها یا نام کاربر..."
+                  : "جستجو در تیکت‌ها..."
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 pr-10 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-zinc-900 dark:focus:border-white focus:outline-none transition-all shadow-sm"
+            />
+          </div>
+
+          {/* دراپ‌داون فیلتر بر اساس موضوع */}
+          <select
+            value={selectedCategoryFilter}
+            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+            className="w-full sm:w-48 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none shadow-sm cursor-pointer"
+          >
+            <option value="">همه موضوعات</option>
+            <option value="پشتیبانی فنی">پشتیبانی فنی</option>
+            <option value="امور مالی و حسابداری">امور مالی و حسابداری</option>
+            <option value="گزارش باگ">گزارش باگ</option>
+            <option value="سوالات عمومی">سوالات عمومی</option>
+          </select>
+
+          {/* دراپ‌داون مرتب‌سازی بر اساس اولویت */}
+          <select
+            value={selectedPrioritySort}
+            onChange={(e) => setSelectedPrioritySort(e.target.value)}
+            className="w-full sm:w-48 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none shadow-sm cursor-pointer"
+          >
+            <option value="">مرتب‌سازی بر اساس اولویت</option>
+            <option value="high">اولویت زیاد (ابتدا زیاد)</option>
+            <option value="low">اولویت کم (ابتدا کم)</option>
+          </select>
         </div>
 
         <div className="space-y-4">
@@ -421,6 +477,13 @@ export const DashboardPage: React.FC = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                       <h4 className="font-semibold text-sm">{ticket.title}</h4>
                       {renderPriorityBadge(ticket.priority)}
+
+                      {ticket.category && (
+                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full">
+                          {ticket.category}
+                        </span>
+                      )}
+
                       {isPrivileged && ticket.author && (
                         <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
                           <User className="h-3 w-3" />
@@ -431,6 +494,14 @@ export const DashboardPage: React.FC = () => {
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">
                       {ticket.description}
                     </p>
+
+                    {/* نمایش اطلاعات مسئول ارجاع‌شده */}
+                    {ticket.assignee && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        ارجاع داده شده به:{" "}
+                        {ticket.assignee.name || ticket.assignee.email}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 self-start sm:self-center">
                     <span
@@ -488,20 +559,61 @@ export const DashboardPage: React.FC = () => {
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  اولویت
-                </label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
-                >
-                  <option value="low">کم</option>
-                  <option value="normal">متوسط</option>
-                  <option value="high">زیاد</option>
-                </select>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    موضوع (دسته‌بندی)
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="پشتیبانی فنی">پشتیبانی فنی</option>
+                    <option value="امور مالی و حسابداری">
+                      امور مالی و حسابداری
+                    </option>
+                    <option value="گزارش باگ">گزارش باگ</option>
+                    <option value="سوالات عمومی">سوالات عمومی</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    اولویت
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="low">کم</option>
+                    <option value="normal">متوسط</option>
+                    <option value="high">زیاد</option>
+                  </select>
+                </div>
               </div>
+
+              {/* گزینه ارجاع به خود برای ادمین / پشتیبان */}
+              {isPrivileged && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="assignToMeCheckbox"
+                    checked={assignToMe}
+                    onChange={(e) => setAssignToMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="assignToMeCheckbox"
+                    className="text-xs font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                  >
+                    ارجاع این تیکت به خودم ({currentUserName})
+                  </label>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                   متن تیکت
