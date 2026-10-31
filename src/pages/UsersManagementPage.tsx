@@ -9,12 +9,14 @@ import {
   Shield,
   ShieldAlert,
   Sun,
+  Ticket as TicketIcon,
   Trash2,
   User,
   UserPlus,
   Users,
   X,
 } from "lucide-react";
+
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -39,13 +41,15 @@ export const UsersManagementPage: React.FC = () => {
   const [role, setRole] = useState("requester");
   const [submitting, setSubmitting] = useState(false);
 
-  // بررسی نقش کاربر از روی توکن (هماهنگ با حروف بزرگ و کوچک)
+  // بررسی نقش کاربر از روی توکن
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const userRole = payload.role ? payload.role.toUpperCase() : "";
+
         if (userRole !== "ADMIN") {
           toast.error("شما دسترسی به این صفحه را ندارید.");
           navigate("/");
@@ -100,8 +104,10 @@ export const UsersManagementPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       setSubmitting(true);
+
       if (editingUserId) {
         await api.put(`/users/${editingUserId}`, {
           name,
@@ -109,11 +115,13 @@ export const UsersManagementPage: React.FC = () => {
           role,
           password,
         });
+
         toast.success("کاربر با موفقیت ویرایش شد");
       } else {
         await api.post("/users", { name, email, password, role });
         toast.success("کاربر جدید با موفقیت ساخته شد");
       }
+
       setIsModalOpen(false);
       fetchUsers();
     } catch (err: any) {
@@ -125,6 +133,7 @@ export const UsersManagementPage: React.FC = () => {
 
   const handleDeleteUser = async (userId: string) => {
     if (!window.confirm("آیا از حذف این کاربر اطمینان دارید؟")) return;
+
     try {
       await api.delete(`/users/${userId}`);
       toast.success("کاربر حذف شد");
@@ -155,11 +164,13 @@ export const UsersManagementPage: React.FC = () => {
         }`}
       >
         <div className="space-y-8">
+          {/* لوگو و عنوان */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md">
-                <Users className="h-5 w-5" />
+                <TicketIcon className="h-5 w-5" />
               </div>
+
               <div>
                 <h2 className="font-bold text-sm tracking-tight">
                   سامانه تیکت
@@ -178,6 +189,7 @@ export const UsersManagementPage: React.FC = () => {
             </button>
           </div>
 
+          {/* منوی اصلی */}
           <nav className="space-y-1">
             <button
               onClick={() => {
@@ -190,6 +202,7 @@ export const UsersManagementPage: React.FC = () => {
               <span>مدیریت کل تیکت‌ها</span>
             </button>
 
+            {/* آیتم فعال مدیریت کاربران */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="flex w-full items-center gap-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-900 dark:text-zinc-100"
@@ -209,6 +222,7 @@ export const UsersManagementPage: React.FC = () => {
               <span>تنظیمات حساب</span>
             </button>
 
+            {/* نشان دسترسی ادمین */}
             <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl mt-2">
               <ShieldAlert className="h-4 w-4" />
               <span>دسترسی ادمین فعال است</span>
@@ -216,11 +230,13 @@ export const UsersManagementPage: React.FC = () => {
           </nav>
         </div>
 
+        {/* تنظیمات پوسته و خروج */}
         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5 space-y-4">
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 px-1">
               حالت پوسته
             </label>
+
             <div className="flex items-center gap-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/80 p-1">
               <button
                 onClick={() => setTheme("light")}
@@ -232,6 +248,7 @@ export const UsersManagementPage: React.FC = () => {
               >
                 <Sun className="h-4 w-4" />
               </button>
+
               <button
                 onClick={() => setTheme("dark")}
                 className={`grow flex h-8 items-center justify-center rounded-full transition-all ${
@@ -242,6 +259,7 @@ export const UsersManagementPage: React.FC = () => {
               >
                 <Moon className="h-4 w-4" />
               </button>
+
               <button
                 onClick={() => setTheme("system")}
                 className={`grow flex h-8 items-center justify-center rounded-full transition-all ${
@@ -267,6 +285,7 @@ export const UsersManagementPage: React.FC = () => {
 
       {/* محتوای اصلی */}
       <main className="grow p-4 md:p-10 space-y-8 overflow-y-auto">
+        {/* دکمه منوی موبایل */}
         <div className="flex items-center justify-between md:hidden pb-2 border-b border-zinc-200 dark:border-zinc-800">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
@@ -277,6 +296,7 @@ export const UsersManagementPage: React.FC = () => {
           </button>
         </div>
 
+        {/* عنوان صفحه و دکمه افزودن */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -286,6 +306,7 @@ export const UsersManagementPage: React.FC = () => {
               ساخت، ویرایش و حذف حساب‌های کاربری و ادمین
             </p>
           </div>
+
           <button
             onClick={handleOpenCreateModal}
             className="flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 px-4 py-2.5 text-sm font-semibold shadow hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all cursor-pointer"
@@ -295,6 +316,7 @@ export const UsersManagementPage: React.FC = () => {
           </button>
         </div>
 
+        {/* جدول کاربران */}
         {loading ? (
           <div className="text-center py-12 text-zinc-400">
             در حال بارگذاری...
@@ -311,6 +333,7 @@ export const UsersManagementPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-center">عملیات</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
                   {users.map((u) => (
                     <tr
@@ -321,9 +344,11 @@ export const UsersManagementPage: React.FC = () => {
                         <User className="h-4 w-4 text-zinc-400" />
                         {u.name}
                       </td>
+
                       <td className="py-4 px-4 text-zinc-600 dark:text-zinc-300">
                         {u.email}
                       </td>
+
                       <td className="py-4 px-4">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -338,6 +363,7 @@ export const UsersManagementPage: React.FC = () => {
                           {u.role}
                         </span>
                       </td>
+
                       <td className="py-4 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
@@ -347,6 +373,7 @@ export const UsersManagementPage: React.FC = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </button>
+
                           <button
                             onClick={() => handleDeleteUser(u.id)}
                             className="p-2 rounded-xl text-zinc-400 hover:text-red-600 hover:bg-red-500/10 transition-all cursor-pointer"
@@ -372,6 +399,7 @@ export const UsersManagementPage: React.FC = () => {
                 <h3 className="text-base font-bold">
                   {editingUserId ? "ویرایش اطلاعات کاربر" : "ساخت کاربر جدید"}
                 </h3>
+
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
@@ -379,11 +407,13 @@ export const UsersManagementPage: React.FC = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                     نام کامل
                   </label>
+
                   <input
                     type="text"
                     value={name}
@@ -392,10 +422,12 @@ export const UsersManagementPage: React.FC = () => {
                     className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                     ایمیل
                   </label>
+
                   <input
                     type="email"
                     value={email}
@@ -404,11 +436,13 @@ export const UsersManagementPage: React.FC = () => {
                     className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                     رمز عبور{" "}
                     {editingUserId && "(در صورت عدم تغییر خالی بگذارید)"}
                   </label>
+
                   <input
                     type="password"
                     value={password}
@@ -417,10 +451,12 @@ export const UsersManagementPage: React.FC = () => {
                     className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 px-4 py-2.5 text-sm focus:outline-none transition-all shadow-sm"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                     نقش کاربر
                   </label>
+
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
@@ -431,6 +467,7 @@ export const UsersManagementPage: React.FC = () => {
                     <option value="admin">مدیر کل (Admin)</option>
                   </select>
                 </div>
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
@@ -439,6 +476,7 @@ export const UsersManagementPage: React.FC = () => {
                   >
                     انصراف
                   </button>
+
                   <button
                     type="submit"
                     disabled={submitting}
