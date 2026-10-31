@@ -19,6 +19,7 @@ import {
   Trash2,
   User,
   UserCheck,
+  Users,
   X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -141,7 +142,6 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // تابع ارجاع سریع تیکت به خود (مخصوص ادمین/پشتیبان)
   const handleAssignToMe = async (e: React.MouseEvent, ticketId: string) => {
     e.stopPropagation();
     try {
@@ -285,6 +285,19 @@ export const DashboardPage: React.FC = () => {
               <span>{isPrivileged ? "مدیریت کل تیکت‌ها" : "داشبورد اصلی"}</span>
             </button>
 
+            {isPrivileged && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate("/users");
+                }}
+                className="flex w-full items-center gap-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer text-zinc-600 dark:text-zinc-300"
+              >
+                <Users className="h-4 w-4" />
+                <span>مدیریت کاربران</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setIsMobileMenuOpen(false);
@@ -313,19 +326,31 @@ export const DashboardPage: React.FC = () => {
             <div className="flex items-center gap-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/80 p-1">
               <button
                 onClick={() => setTheme("light")}
-                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${theme === "light" ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm" : "text-zinc-400"}`}
+                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${
+                  theme === "light"
+                    ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-400"
+                }`}
               >
                 <Sun className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setTheme("dark")}
-                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${theme === "dark" ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm" : "text-zinc-400"}`}
+                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${
+                  theme === "dark"
+                    ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-400"
+                }`}
               >
                 <Moon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setTheme("system")}
-                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${theme === "system" ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm" : "text-zinc-400"}`}
+                className={`grow flex h-8 items-center justify-center rounded-full transition-all ${
+                  theme === "system"
+                    ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-400"
+                }`}
               >
                 <Monitor className="h-4 w-4" />
               </button>
@@ -576,7 +601,6 @@ export const DashboardPage: React.FC = () => {
                             className="flex items-center justify-center gap-1.5"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* دکمه ارجاع سریع به خود برای ادمین/پشتیبان */}
                             {isPrivileged && !ticket.assignee && (
                               <button
                                 onClick={(e) => handleAssignToMe(e, ticket.id)}
@@ -588,7 +612,6 @@ export const DashboardPage: React.FC = () => {
                               </button>
                             )}
 
-                            {/* دکمه حذف */}
                             {isPrivileged && (
                               <button
                                 onClick={(e) =>
@@ -612,7 +635,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </main>
 
-      {/* مدال ایجاد تیکت (فقط برای کاربران عادی نمایش داده می‌شود) */}
+      {/* مدال ایجاد تیکت (فقط برای کاربران عادی) */}
       {!isPrivileged && isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-xl space-y-6">
