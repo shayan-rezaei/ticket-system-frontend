@@ -30,41 +30,70 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("token"),
   );
+
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const initAuth = async () => {
+    const fetchUserData = async () => {
       const storedToken = localStorage.getItem("token");
-      if (storedToken) {
-        setToken(storedToken);
-        try {
-          const res = await api.get("/auth/me");
-          if (res.data) {
-            const userData: User = {
-              id: res.data.id || res.data.userId || "",
-              email: res.data.email || "",
-              name: res.data.name || "",
-              role: res.data.role || res.data.userRole || "requester",
-            };
-            setUser(userData);
-            localStorage.setItem("user", JSON.stringify(userData));
-          }
-        } catch (error) {
-          console.error("Failed to fetch user profile from /auth/me", error);
-        }
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      setToken(storedToken);
+
+      try {
+        // درخواست به /auth/me برای گرفتن نقش واقعی از دیتابیس
+        const res = await api.get("/auth/me");
+        console.log("Response from /auth/me:", res.data); // این را در F12 ببینید
+
+        // استخراج امن اطلاعات از هر ساختاری که بک‌اند فرستاده باشد
+        const rawData = res.data?.data || res.data?.user || res.data || {};
+
+        const resolvedUser: User = {
+          id: rawData.id || rawData.userId || "",
+          email: rawData.email || "",
+          name: rawData.name || "",
+          role: rawData.role || rawData.userRole || "requester",
+        };
+
+        setUser(resolvedUser);
+        localStorage.setItem("user", JSON.stringify(resolvedUser));
+      } catch (error) {
+        console.error(
+          "Error fetching /auth/me, using fallback from token/storage",
+          error,
+        );
+
+        // اگر سرور خطا داد، از توکن JWT استخراج می‌کنیم
+        try {
+          const payload = JSON.parse(atob(storedToken.split(".")[1]));
+          const tokenData = payload.user || payload;
+          const fallbackUser: User = {
+            id: tokenData.id || tokenData.userId || "",
+            email: tokenData.email || "",
+            name: tokenData.name || "",
+            role: tokenData.role || tokenData.userRole || "requester",
+          };
+          setUser(fallbackUser);
+        } catch (e) {
+          console.error("Failed to decode token fallback", e);
+        }
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    initAuth();
+    fetchUserData();
   }, []);
 
   const login = (newToken: string, userData: User) => {
