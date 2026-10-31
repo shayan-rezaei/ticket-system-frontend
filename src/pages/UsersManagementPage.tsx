@@ -39,14 +39,14 @@ export const UsersManagementPage: React.FC = () => {
   const [role, setRole] = useState("requester");
   const [submitting, setSubmitting] = useState(false);
 
-  // بررسی نقش کاربر از روی توکن
+  // بررسی نقش کاربر از روی توکن (هماهنگ با حروف بزرگ و کوچک)
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        const userRole = payload.role ? payload.role.toLowerCase() : "";
-        if (userRole !== "admin") {
+        const userRole = payload.role ? payload.role.toUpperCase() : "";
+        if (userRole !== "ADMIN") {
           toast.error("شما دسترسی به این صفحه را ندارید.");
           navigate("/");
         }
