@@ -32,26 +32,24 @@ export const SettingsPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // بررسی دقیق و اولویت‌بندی‌شده نقش کاربر هنگام لود صفحه
+  // دریافت و تنظیم اطلاعات کاربر از توکن و اندپوینت /auth/me
   useEffect(() => {
     const initUserData = async () => {
-      // ۱. ابتدا مستقیم از توکن رمزگشایی می‌کنیم که مطمئن‌ترین منبع نقش است
+      // ۱. رمزگشایی اولیه از توکن محلی
       const token = localStorage.getItem("token");
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
-          if (payload && payload.role) {
-            setCurrentUserRole(payload.role);
-          }
-          if (payload && payload.email) {
-            setEmail(payload.email);
+          if (payload) {
+            if (payload.role) setCurrentUserRole(payload.role);
+            if (payload.email) setEmail(payload.email);
           }
         } catch (tokenErr) {
           console.error("Error decoding token", tokenErr);
         }
       }
 
-      // ۲. دریافت پروفایل برای به‌روزرسانی نام و چک مجدد نقش
+      // ۲. دریافت اطلاعات به‌روز از اندپوینت /auth/me
       try {
         const userRes = await api.get("/auth/me");
         if (userRes.data) {
@@ -67,11 +65,13 @@ export const SettingsPage: React.FC = () => {
     initUserData();
   }, []);
 
-  const roleLower = currentUserRole ? currentUserRole.toLowerCase() : "";
+  // بررسی نقش کاربر بدون حساسیت به بزرگی و کوچکی حروف
+  const roleLower = currentUserRole ? currentUserRole.toLowerCase().trim() : "";
   const isPrivileged =
     roleLower === "supporter" ||
     roleLower === "admin" ||
-    roleLower === "support";
+    roleLower === "support" ||
+    roleLower === "administrator";
 
   const handleLogout = () => {
     logout();
@@ -82,7 +82,16 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
+      await api.patch("/auth/update-profile", {
+        name,
+        email,
+        currentPassword: currentPassword || undefined,
+        newPassword: newPassword || undefined,
+      });
+
       toast.success("تنظیمات با موفقیت ذخیره شد");
+      setCurrentPassword("");
+      setNewPassword("");
     } catch (err: any) {
       toast.error(err.response?.data?.error || "خطا در بروزرسانی اطلاعات");
     } finally {
