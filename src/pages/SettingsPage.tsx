@@ -6,19 +6,20 @@ import { Sidebar } from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 
 export const SettingsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // همگام‌سازی کامل فیلدها به محض آماده شدن اطلاعات کاربر از AuthContext
   useEffect(() => {
     if (user) {
-      if (user.name) setName(user.name);
-      if (user.email) setEmail(user.email);
+      setName(user.name || "");
+      setEmail(user.email || "");
     }
   }, [user]);
 
@@ -42,6 +43,10 @@ export const SettingsPage: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return null; // یا یک لودینگ ساده تا اطلاعات کانتکست خوانده شود
+  }
 
   return (
     <div
